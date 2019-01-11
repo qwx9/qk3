@@ -325,7 +325,7 @@ Dlls will call this directly
 ============
 */
 int QDECL VM_DllSyscall( int arg, ... ) {
-#if ((defined __linux__) && (defined __powerpc__))
+/*
   // rcg010206 - see commentary above
   int args[16];
   int i;
@@ -339,9 +339,8 @@ int QDECL VM_DllSyscall( int arg, ... ) {
   va_end(ap);
   
   return currentVM->systemCall( args );
-#else // original id code
+*/
 	return currentVM->systemCall( &arg );
-#endif
 }
 
 /*
@@ -575,17 +574,6 @@ void VM_Free( vm_t *vm ) {
 		Sys_UnloadDll( vm->dllHandle );
 		Com_Memset( vm, 0, sizeof( *vm ) );
 	}
-#if 0	// now automatically freed by hunk
-	if ( vm->codeBase ) {
-		Z_Free( vm->codeBase );
-	}
-	if ( vm->dataBase ) {
-		Z_Free( vm->dataBase );
-	}
-	if ( vm->instructionPointers ) {
-		Z_Free( vm->instructionPointers );
-	}
-#endif
 	Com_Memset( vm, 0, sizeof( *vm ) );
 
 	currentVM = NULL;

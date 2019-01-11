@@ -545,7 +545,7 @@ void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out )
 
 //============================================================================
 
-#if !idppc
+#ifndef idppc
 /*
 ** float q_rsqrt( float number )
 */
@@ -738,9 +738,11 @@ int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 ==================
 */
 
+/*
 #if !( (defined __linux__ || __FreeBSD__) && (defined __i386__) && (!defined C_ONLY)) // rb010123
 
 #if defined __LCC__ || defined C_ONLY || !id386 || defined __VECTORC
+*/
 
 int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 {
@@ -805,6 +807,7 @@ int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 
 	return sides;
 }
+/*
 #else
 #pragma warning( disable: 4035 )
 
@@ -1041,6 +1044,7 @@ Lerror:
 
 #endif
 #endif
+*/
 
 /*
 =================

@@ -321,7 +321,7 @@ FS_Initialized
 ==============
 */
 
-qboolean FS_Initialized() {
+qboolean FS_Initialized(void) {
 	return (fs_searchpaths != NULL);
 }
 
@@ -354,7 +354,7 @@ FS_LoadStack
 return load stack
 =================
 */
-int FS_LoadStack()
+int FS_LoadStack(void)
 {
 	return fs_loadStack;
 }
@@ -741,6 +741,20 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp ) {
 	return 0;
 }
 
+static int
+rename(char *old, char *new)
+{
+	char *p;
+	Dir d;
+
+	if((p = strrchr(new, '/')) == nil)
+		p = new;
+	else
+		p++;
+	nulldir(&d);
+	d.name = p;
+	return dirwstat(old, &d) < 0;
+}
 
 /*
 ===========
@@ -2699,7 +2713,7 @@ NOTE TTimo: the reordering that happens here is not reflected in the cvars (\cva
   this can lead to misleading situations, see https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=540
 ================
 */
-static void FS_ReorderPurePaks()
+static void FS_ReorderPurePaks(void)
 {
 	searchpath_t *s;
 	int i;

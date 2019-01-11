@@ -19,35 +19,6 @@ along with Foobar; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-#include <unistd.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <ctype.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <errno.h>
-#ifdef __linux__ // rb010123
-  #include <mntent.h>
-#endif
-#include <dlfcn.h>
-
-#ifdef __linux__
-  #include <fpu_control.h> // bk001213 - force dumps on divide by zero
-#endif
-
-// FIXME TTimo should we gard this? most *nix system should comply?
-#include <termios.h>
 
 #include "../game/q_shared.h"
 #include "../qcommon/qcommon.h"
@@ -60,7 +31,6 @@ refexport_t re;
 
 unsigned  sys_frame_time;
 
-uid_t saved_euid;
 qboolean stdin_active = qtrue;
 
 // =============================================================
@@ -494,7 +464,7 @@ void Sys_ConsoleInputInit()
               characters  EOF,  EOL,  EOL2, ERASE, KILL, REPRINT,
               STATUS, and WERASE, and buffers by lines.
      ISIG: when any of the characters  INTR,  QUIT,  SUSP,  or
-              DSUSP are received, generate the corresponding sig­
+              DSUSP are received, generate the corresponding sigï¿½
               nal
     */              
     tc.c_lflag &= ~(ECHO | ICANON);
@@ -1226,10 +1196,6 @@ int main ( int argc, char* argv[] )
   int   len, i;
   char  *cmdline;
   void Sys_SetDefaultCDPath(const char *path);
-
-  // go back to real user for config loads
-  saved_euid = geteuid();
-  seteuid(getuid());
 
   Sys_ParseArgs( argc, argv );  // bk010104 - added this for support
 

@@ -213,7 +213,7 @@ typedef struct {
 #elif defined(_WIN32)
 */
 
-#if defined(Q3_VM) || defined(_WIN32)
+#ifdef Q3_VM
 
 #define _3DFX_DRIVER_NAME	"3dfxvgl"
 #define OPENGL_DRIVER_NAME	"opengl32"

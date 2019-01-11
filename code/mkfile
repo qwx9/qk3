@@ -1,0 +1,86 @@
+</$objtype/mkfile
+BIN=$home/bin/$objtype
+TARG=q3ded
+
+OFILES=\
+	null/null_client.$O\
+	null/null_input.$O\
+	null/null_snddma.$O\
+	server/sv_bot.$O\
+	server/sv_ccmds.$O\
+	server/sv_client.$O\
+	server/sv_game.$O\
+	server/sv_init.$O\
+	server/sv_main.$O\
+	server/sv_net_chan.$O\
+	server/sv_snapshot.$O\
+	server/sv_world.$O\
+	qcommon/cm_load.$O\
+	qcommon/cm_patch.$O\
+	qcommon/cm_polylib.$O\
+	qcommon/cm_test.$O\
+	qcommon/cm_trace.$O\
+	qcommon/cmd.$O\
+	qcommon/common.$O\
+	qcommon/cvar.$O\
+	qcommon/files.$O\
+	qcommon/huffman.$O\
+	qcommon/md4.$O\
+	qcommon/msg.$O\
+	qcommon/net_chan.$O\
+	qcommon/unzip.$O\
+	qcommon/vm.$O\
+	qcommon/vm_interpreted.$O\
+	game/q_math.$O\
+	game/q_shared.$O\
+	unix/qk3ded.$O\
+	unix/linux_common.$O\
+	unix/unix_net.$O\
+	unix/unix_shared.$O\
+	unix/linux_signals.$O\
+
+HFILES=\
+	game/ai_chat.h\
+	game/ai_cmd.h\
+	game/ai_dmnet.h\
+	game/ai_dmq3.h\
+	game/ai_main.h\
+	game/ai_team.h\
+	game/ai_vcmd.h\
+	game/be_aas.h\
+	game/be_ai_char.h\
+	game/be_ai_chat.h\
+	game/be_ai_gen.h\
+	game/be_ai_goal.h\
+	game/be_ai_move.h\
+	game/be_ai_weap.h\
+	game/be_ea.h\
+	game/bg_lib.h\
+	game/bg_local.h\
+	game/bg_public.h\
+	game/botlib.h\
+	game/chars.h\
+	game/g_local.h\
+	game/g_public.h\
+	game/g_rankings.h\
+	game/g_team.h\
+	game/inv.h\
+	game/match.h\
+	game/q_shared.h\
+	game/surfaceflags.h\
+	game/syn.h\
+	qcommon/cm_local.h\
+	qcommon/cm_patch.h\
+	qcommon/cm_polylib.h\
+	qcommon/cm_public.h\
+	qcommon/qcommon.h\
+	qcommon/qfiles.h\
+	qcommon/unzip.h\
+	qcommon/vm_local.h\
+	server/server.h\
+	unix/linux_local.h\
+	unix/qasm.h\
+	unix/unix_glw.h\
+
+</sys/src/cmd/mkone
+CFLAGS=$CFLAGS -DDEDICATED -DC_ONLY

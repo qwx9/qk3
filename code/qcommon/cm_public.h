@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
-#include "qfiles.h"
+#include "../qcommon/qfiles.h"
 
 
 void		CM_LoadMap( const char *name, qboolean clientload, int *checksum);

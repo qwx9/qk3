@@ -111,17 +111,8 @@ static char	*opnames[256] = {
 };
 #endif
 
-#if idppc
-    #if defined(__GNUC__)
-        static inline unsigned int loadWord(void *addr) {
-            unsigned int word;
-            
-            asm("lwbrx %0,0,%1" : "=r" (word) : "r" (addr));
-            return word;
-        }
-    #else
+#ifdef idppc
 	#define loadWord(addr) __lwbrx(addr,0)
-    #endif
 #else
 	#define	loadWord(addr) *((int *)addr)
 #endif

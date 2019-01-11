@@ -516,7 +516,7 @@ issues.
 
 #define BASEGAME "baseq3"
 
-qboolean FS_Initialized();
+qboolean FS_Initialized(void);
 
 void	FS_InitFilesystem (void);
 void	FS_Shutdown( qboolean closemfp );
@@ -534,7 +534,7 @@ void	FS_FreeFileList( char **list );
 
 qboolean FS_FileExists( const char *file );
 
-int		FS_LoadStack();
+int		FS_LoadStack(void);
 
 int		FS_GetFileList(  const char *path, const char *extension, char *listbuf, int bufsize );
 int		FS_GetModList(  char *listbuf, int bufsize );
@@ -772,8 +772,10 @@ temp file loading
 
 */
 
-#if defined(_DEBUG) && !defined(BSPC)
+#ifdef _DEBUG
+#ifndef BSPC
 	#define ZONE_DEBUG
+#endif
 #endif
 
 #ifdef ZONE_DEBUG

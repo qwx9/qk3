@@ -119,15 +119,6 @@ void CM_StoreBrushes( leafList_t *ll, int nodenum ) {
 		}
 		((cbrush_t **)ll->list)[ ll->count++ ] = b;
 	}
-#if 0
-	// store patches?
-	for ( k = 0 ; k < leaf->numLeafSurfaces ; k++ ) {
-		patch = cm.surfaces[ cm.leafsurfaces[ leaf->firstleafsurface + k ] ];
-		if ( !patch ) {
-			continue;
-		}
-	}
-#endif
 }
 
 /*

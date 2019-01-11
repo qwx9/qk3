@@ -20,14 +20,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
-#if defined(STRICTUNZIP) || defined(STRICTZIPUNZIP)
-/* like the STRICT of WIN32, we define a pointer that cannot be converted
-    from (void*) without cast */
-typedef struct TagunzFile__ { int unused; } unzFile__; 
-typedef unzFile__ *unzFile;
-#else
 typedef void* unzFile;
-#endif
 
 /* tm_unz contain date/time info */
 typedef struct tm_unz_s 
