@@ -33,7 +33,8 @@ and one exported function: Perform
 
 */
 
-#include "vm_local.h"
+#include "../game/q_shared.h"
+#include "qcommon.h"
 
 
 vm_t	*currentVM = NULL; // bk001212

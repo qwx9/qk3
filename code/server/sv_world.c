@@ -61,12 +61,6 @@ them, which prevents having to deal with multiple fragments of a single entity.
 ===============================================================================
 */
 
-typedef struct worldSector_s {
-	int		axis;		// -1 = leaf node
-	float	dist;
-	struct worldSector_s	*children[2];
-	svEntity_t	*entities;
-} worldSector_t;
 
 #define	AREA_DEPTH	4
 #define	AREA_NODES	64

@@ -28,6 +28,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 //=============================================================================
 
+typedef struct worldSector_s {
+	int		axis;		// -1 = leaf node
+	float	dist;
+	struct worldSector_s	*children[2];
+	struct svEntity_s	*entities;
+} worldSector_t;
+
 #define	PERS_SCORE				0		// !!! MUST NOT CHANGE, SERVER AND
 										// GAME BOTH REFERENCE !!!
 

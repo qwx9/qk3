@@ -1071,4 +1071,6 @@ extern huffman_t clientHuffTables;
 #define	CL_ENCODE_START		12
 #define CL_DECODE_START		4
 
+#include "../qcommon/vm_local.h"
+
 #endif // _QCOMMON_H_
