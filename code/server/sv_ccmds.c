@@ -121,8 +121,6 @@ static client_t *SV_GetPlayerByNum( void ) {
 		return NULL;
 	}
 	return cl;
-
-	return NULL;
 }
 
 //=========================================================
@@ -413,24 +411,22 @@ static void SV_Ban_f( void ) {
 	}
 
 	// look up the authorize server's IP
-	if ( !svs.authorizeAddress.ip[0] && svs.authorizeAddress.type != NA_BAD ) {
-		Com_Printf( "Resolving %s\n", AUTHORIZE_SERVER_NAME );
-		if ( !NET_StringToAdr( AUTHORIZE_SERVER_NAME, &svs.authorizeAddress ) ) {
-			Com_Printf( "Couldn't resolve address\n" );
+	if ( !svs.authorizeAddress.sys[0] && svs.authorizeAddress.type != NA_BAD ) {
+		char s[128];
+
+		snprint(s, sizeof s, "%s!%d", AUTHORIZE_SERVER_NAME, PORT_AUTHORIZE);
+		Com_Printf("Resolving %s\n", s);
+		if(!NET_StringToAdr(s, &svs.authorizeAddress)){
+			Com_Printf("Couldn't resolve address\n");
 			return;
 		}
-		svs.authorizeAddress.port = BigShort( PORT_AUTHORIZE );
-		Com_Printf( "%s resolved to %i.%i.%i.%i:%i\n", AUTHORIZE_SERVER_NAME,
-			svs.authorizeAddress.ip[0], svs.authorizeAddress.ip[1],
-			svs.authorizeAddress.ip[2], svs.authorizeAddress.ip[3],
-			BigShort( svs.authorizeAddress.port ) );
+		Com_Printf( "Resolved to %s\n", svs.authorizeAddress.sys);
 	}
 
 	// otherwise send their ip to the authorize server
 	if ( svs.authorizeAddress.type != NA_BAD ) {
-		NET_OutOfBandPrint( NS_SERVER, svs.authorizeAddress,
-			"banUser %i.%i.%i.%i", cl->netchan.remoteAddress.ip[0], cl->netchan.remoteAddress.ip[1], 
-								   cl->netchan.remoteAddress.ip[2], cl->netchan.remoteAddress.ip[3] );
+		NET_OutOfBandPrint( NS_SERVER, &svs.authorizeAddress,
+			"banUser %s", cl->netchan.remoteAddress.addr);
 		Com_Printf("%s was banned from coming back\n", cl->name);
 	}
 }
@@ -467,24 +463,22 @@ static void SV_BanNum_f( void ) {
 	}
 
 	// look up the authorize server's IP
-	if ( !svs.authorizeAddress.ip[0] && svs.authorizeAddress.type != NA_BAD ) {
-		Com_Printf( "Resolving %s\n", AUTHORIZE_SERVER_NAME );
-		if ( !NET_StringToAdr( AUTHORIZE_SERVER_NAME, &svs.authorizeAddress ) ) {
-			Com_Printf( "Couldn't resolve address\n" );
+	if ( !svs.authorizeAddress.sys[0] && svs.authorizeAddress.type != NA_BAD ) {
+		char s[128];
+
+		snprint(s, sizeof s, "%s!%d", AUTHORIZE_SERVER_NAME, PORT_AUTHORIZE);
+		Com_Printf("Resolving %s\n", s);
+		if(!NET_StringToAdr(s, &svs.authorizeAddress)){
+			Com_Printf("Couldn't resolve address\n");
 			return;
 		}
-		svs.authorizeAddress.port = BigShort( PORT_AUTHORIZE );
-		Com_Printf( "%s resolved to %i.%i.%i.%i:%i\n", AUTHORIZE_SERVER_NAME,
-			svs.authorizeAddress.ip[0], svs.authorizeAddress.ip[1],
-			svs.authorizeAddress.ip[2], svs.authorizeAddress.ip[3],
-			BigShort( svs.authorizeAddress.port ) );
+		Com_Printf( "Resolved to %s\n", svs.authorizeAddress.sys);
 	}
 
 	// otherwise send their ip to the authorize server
 	if ( svs.authorizeAddress.type != NA_BAD ) {
-		NET_OutOfBandPrint( NS_SERVER, svs.authorizeAddress,
-			"banUser %i.%i.%i.%i", cl->netchan.remoteAddress.ip[0], cl->netchan.remoteAddress.ip[1], 
-								   cl->netchan.remoteAddress.ip[2], cl->netchan.remoteAddress.ip[3] );
+		NET_OutOfBandPrint( NS_SERVER, &svs.authorizeAddress,
+			"banUser %s", cl->netchan.remoteAddress.addr);
 		Com_Printf("%s was banned from coming back\n", cl->name);
 	}
 }
@@ -573,7 +567,7 @@ static void SV_Status_f( void ) {
 
 		Com_Printf ("%7i ", svs.time - cl->lastPacketTime );
 
-		s = NET_AdrToString( cl->netchan.remoteAddress );
+		s = NET_AdrToString(&cl->netchan.remoteAddress);
 		Com_Printf ("%s", s);
 		l = 22 - strlen(s);
 		for (j=0 ; j<l ; j++)

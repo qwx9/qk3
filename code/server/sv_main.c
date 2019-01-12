@@ -239,30 +239,31 @@ void SV_MasterHeartbeat( void ) {
 		// resolving usually causes hitches on win95, so only
 		// do it when needed
 		if ( sv_master[i]->modified ) {
+			char s[128], *p;
+
 			sv_master[i]->modified = qfalse;
-	
-			Com_Printf( "Resolving %s\n", sv_master[i]->string );
-			if ( !NET_StringToAdr( sv_master[i]->string, &adr[i] ) ) {
+			p = sv_master[i]->string;
+			if(strrchr(p, ':') == nil && strrchr(p, '!') == nil){
+				p = s;
+				snprint(s, sizeof s, "%s!%d", sv_master[i]->string, PORT_MASTER);
+			}
+			Com_Printf("Resolving %s\n", p);
+			if(!NET_StringToAdr(p, &adr[i])){
 				// if the address failed to resolve, clear it
 				// so we don't take repeated dns hits
-				Com_Printf( "Couldn't resolve address: %s\n", sv_master[i]->string );
-				Cvar_Set( sv_master[i]->name, "" );
+				Com_Printf("Couldn't resolve address: %s\n", sv_master[i]->string);
+				Cvar_Set(sv_master[i]->name, "");
 				sv_master[i]->modified = qfalse;
 				continue;
 			}
-			if ( !strstr( ":", sv_master[i]->string ) ) {
-				adr[i].port = BigShort( PORT_MASTER );
-			}
-			Com_Printf( "%s resolved to %i.%i.%i.%i:%i\n", sv_master[i]->string,
-				adr[i].ip[0], adr[i].ip[1], adr[i].ip[2], adr[i].ip[3],
-				BigShort( adr[i].port ) );
+			Com_Printf("Resolved to %s\n", adr[i].sys);
 		}
 
 
 		Com_Printf ("Sending heartbeat to %s\n", sv_master[i]->string );
 		// this command should be changed if the server info / status format
 		// ever incompatably changes
-		NET_OutOfBandPrint( NS_SERVER, adr[i], "heartbeat %s\n", HEARTBEAT_GAME );
+		NET_OutOfBandPrint( NS_SERVER, &adr[i], "heartbeat %s\n", HEARTBEAT_GAME );
 	}
 }
 
@@ -352,7 +353,7 @@ void SVC_Status( netadr_t from ) {
 		}
 	}
 
-	NET_OutOfBandPrint( NS_SERVER, from, "statusResponse\n%s\n%s", infostring, status );
+	NET_OutOfBandPrint( NS_SERVER, &from, "statusResponse\n%s\n%s", infostring, status );
 }
 
 /*
@@ -407,7 +408,7 @@ void SVC_Info( netadr_t from ) {
 		Info_SetValueForKey( infostring, "game", gamedir );
 	}
 
-	NET_OutOfBandPrint( NS_SERVER, from, "infoResponse\n%s", infostring );
+	NET_OutOfBandPrint( NS_SERVER, &from, "infoResponse\n%s", infostring );
 }
 
 /*
@@ -417,7 +418,7 @@ SVC_FlushRedirect
 ================
 */
 void SV_FlushRedirect( char *outputbuf ) {
-	NET_OutOfBandPrint( NS_SERVER, svs.redirectAddress, "print\n%s", outputbuf );
+	NET_OutOfBandPrint( NS_SERVER, &svs.redirectAddress, "print\n%s", outputbuf );
 }
 
 /*
@@ -450,10 +451,10 @@ void SVC_RemoteCommand( netadr_t from, msg_t *msg ) {
 	if ( !strlen( sv_rconPassword->string ) ||
 		strcmp (Cmd_Argv(1), sv_rconPassword->string) ) {
 		valid = qfalse;
-		Com_Printf ("Bad rcon from %s:\n%s\n", NET_AdrToString (from), Cmd_Argv(2) );
+		Com_Printf("Bad rcon from %s:\n%s\n", from.sys, Cmd_Argv(2));
 	} else {
 		valid = qtrue;
-		Com_Printf ("Rcon from %s:\n%s\n", NET_AdrToString (from), Cmd_Argv(2) );
+		Com_Printf("Rcon from %s:\n%s\n", from.sys, Cmd_Argv(2));
 	}
 
 	// start redirecting all print outputs to the packet
@@ -514,7 +515,7 @@ void SV_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
 	Cmd_TokenizeString( s );
 
 	c = Cmd_Argv(0);
-	Com_DPrintf ("SV packet %s : %s\n", NET_AdrToString(from), c);
+	Com_DPrintf("SV packet %s : %s\n", from.sys, c);
 
 	if (!Q_stricmp(c, "getstatus")) {
 		SVC_Status( from  );
@@ -534,7 +535,7 @@ void SV_ConnectionlessPacket( netadr_t from, msg_t *msg ) {
 		// sequenced messages to the old client
 	} else {
 		Com_DPrintf ("bad connectionless packet from %s:\n%s\n"
-		, NET_AdrToString (from), s);
+		, from.sys, s);
 	}
 }
 
@@ -567,9 +568,8 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 		if (cl->state == CS_FREE) {
 			continue;
 		}
-		if ( !NET_CompareBaseAdr( from, cl->netchan.remoteAddress ) ) {
+		if(!NET_CompareBaseAdr(&from, &cl->netchan.remoteAddress))
 			continue;
-		}
 		// it is possible to have multiple clients from a single IP
 		// address, so they are differentiated by the qport variable
 		if (cl->netchan.qport != qport) {
@@ -579,9 +579,9 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 		// the IP port can't be used to differentiate them, because
 		// some address translating routers periodically change UDP
 		// port assignments
-		if (cl->netchan.remoteAddress.port != from.port) {
+		if(strcmp(cl->netchan.remoteAddress.srv, from.srv) != 0){
 			Com_Printf( "SV_PacketEvent: fixing up a translated port\n" );
-			cl->netchan.remoteAddress.port = from.port;
+			memcpy(&cl->netchan.remoteAddress, &from, sizeof from);
 		}
 
 		// make sure it is a valid, in sequence packet
@@ -599,7 +599,7 @@ void SV_PacketEvent( netadr_t from, msg_t *msg ) {
 	
 	// if we received a sequenced packet from an address we don't recognize,
 	// send an out of band disconnect packet to it
-	NET_OutOfBandPrint( NS_SERVER, from, "disconnect" );
+	NET_OutOfBandPrint( NS_SERVER, &from, "disconnect" );
 }
 
 

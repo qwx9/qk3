@@ -5,15 +5,24 @@
 
 #include <thread.h>
 
-void *
-emalloc(ulong n)
-{
-	void *p;
+mainstacksize = 256*1024;
 
-	if((p = mallocz(n, 1)) == nil)
-		sysfatal("emalloc %r");
-	setmalloctag(p, getcallerpc(&n));
-	return p;
+extern Channel *echan;
+
+int svonly = 1;
+
+void
+NET_Sleep(int n)
+{
+	netadr_t *a;
+
+	if(nbrecv(echan, nil) == 0){
+		for(a=cons; a<cons+nelem(cons); a++)
+			if(a->fd >= 0 && flen(a->fd) > 0)
+				break;
+		if(a == cons + nelem(cons))	
+			sleep(n);
+	}
 }
 
 static void

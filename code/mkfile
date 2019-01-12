@@ -34,10 +34,10 @@ OFILES=\
 	game/q_math.$O\
 	game/q_shared.$O\
 	unix/qk3ded.$O\
+	unix/sys.$O\
 	unix/linux_common.$O\
 	unix/unix_net.$O\
 	unix/unix_shared.$O\
-	unix/linux_signals.$O\
 
 HFILES=\
 	game/ai_chat.h\
@@ -84,3 +84,8 @@ HFILES=\
 
 </sys/src/cmd/mkone
 CFLAGS=$CFLAGS -DDEDICATED -DC_ONLY
+
+%.$O:	%.c
+	$CC $CFLAGS -o $stem.$O $stem.c
+
+CLEANFILES=$CLEANFILES $OFILES

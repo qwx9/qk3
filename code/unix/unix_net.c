@@ -24,476 +24,199 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../game/q_shared.h"
 #include "../qcommon/qcommon.h"
 
-static cvar_t	*noudp;
+#include <thread.h>
 
-int			ip_socket;
-int			ipx_socket;
+Channel *echan, *lchan;
+netadr_t *net_from, cons[2*MAX_CLIENTS];
 
-#define	MAX_IPS		16
-static	int		numIP;
-static	byte	localIP[MAX_IPS][4];
+static char *netmtpt = "/net";
+static int afd = -1, lpid;
 
-int NET_Socket (char *net_interface, int port);
-char *NET_ErrorString (void);
-
-//=============================================================================
-
-void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
+char	*NET_BaseAdrToString (netadr_t *a)
 {
-	memset (s, 0, sizeof(*s));
-
-	if (a->type == NA_BROADCAST)
-	{
-		s->sin_family = AF_INET;
-
-		s->sin_port = a->port;
-		*(int *)&s->sin_addr = -1;
-	}
-	else if (a->type == NA_IP)
-	{
-		s->sin_family = AF_INET;
-
-		*(int *)&s->sin_addr = *(int *)&a->ip;
-		s->sin_port = a->port;
-	}
+	return a->addr;
 }
 
-void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a)
+qboolean
+Sys_StringToAdr(char *s, netadr_t *a)
 {
-	*(int *)&a->ip = *(int *)&s->sin_addr;
-	a->port = s->sin_port;
-	a->type = NA_IP;
-}
+	int fd, n;
+	char buf[128], *f[4], *p;
 
-char	*NET_BaseAdrToString (netadr_t a)
-{
-	static	char	s[64];
-	
-	Com_sprintf (s, sizeof(s), "%i.%i.%i.%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3]);
-
-	return s;
-}
-
-/*
-=============
-Sys_StringToAdr
-
-idnewt
-192.246.40.70
-=============
-*/
-qboolean	Sys_StringToSockaddr (const char *s, struct sockaddr *sadr)
-{
-	struct hostent	*h;
-	//char	*colon; // bk001204 - unused
-	
-	memset (sadr, 0, sizeof(*sadr));
-	((struct sockaddr_in *)sadr)->sin_family = AF_INET;
-	
-	((struct sockaddr_in *)sadr)->sin_port = 0;
-	
-	if ( s[0] >= '0' && s[0] <= '9')
-	{
-		*(int *)&((struct sockaddr_in *)sadr)->sin_addr = inet_addr(s);
-	}
+	snprint(buf, sizeof buf, "%s/cs", netmtpt);
+	if((fd = open(buf, ORDWR)) < 0)
+		sysfatal("open: %r");
+	if((p = strrchr(s, '!')) == nil && (p = strrchr(s, ':')) == nil)
+		p = "27960";
 	else
-	{
-		if (! (h = gethostbyname(s)) )
+		p++;
+	snprint(buf, sizeof buf, "udp!%s!%s", s, p);
+	n = strlen(buf);
+	if(write(fd, buf, n) != n){
+		fprint(2, "translating %s: %r\n", s);
+		return -1;
+	}
+	seek(fd, 0, 0);
+	if((n = read(fd, buf, sizeof(buf)-1)) <= 0){
+		fprint(2, "reading cs tables: %r");
+		return -1;
+	}
+	buf[n] = 0;
+	close(fd);
+	if(getfields(buf, f, 4, 0, " !") < 2)
+		goto err;
+	memset(a, 0, sizeof *a);
+	strncpy(a->addr, f[1], sizeof(a->addr)-1);
+	strncpy(a->srv, f[2], sizeof(a->srv)-1);
+	snprint(a->sys, sizeof a->sys, "%s!%s", f[1], f[2]);
+	return qtrue;
+err:
+	fprint(2, "bad cs entry %s", buf);
+	return qfalse;
+}
+
+static void
+getinfo(netadr_t *a)
+{
+	NetConnInfo *nc;
+
+	if((nc = getnetconninfo(nil, a->fd)) == nil){
+		fprint(2, "getnetconninfo: %r\n");
+		return;
+	}
+	strncpy(a->addr, nc->raddr, sizeof(a->addr)-1);
+	strncpy(a->srv, nc->rserv, sizeof(a->srv)-1);
+	snprint(a->sys, sizeof a->sys, "%s!%s", a->addr, a->srv);
+	free(nc);
+}
+
+qboolean
+Sys_GetPacket(msg_t *net_message)
+{
+	int n, fd;
+	netadr_t *a;
+
+	if(svonly && nbrecv(lchan, &fd) > 0){
+		for(a=cons; a<cons+nelem(cons); a++)
+			if(a->fd < 0)
+				break;
+		if(a == cons + nelem(cons)){
+			close(fd);
 			return qfalse;
-		*(int *)&((struct sockaddr_in *)sadr)->sin_addr = *(int *)h->h_addr_list[0];
+		}
+		a->fd = fd;
+		getinfo(a);
+	}else{
+		for(a=cons; a<cons+nelem(cons); a++)
+			if(a->fd >= 0 && flen(a->fd) > 0)
+				break;
+		if(a == cons + nelem(cons))
+			return qfalse;
 	}
-	
+	net_message->readcount = 0;
+	if((n = read(a->fd, net_message->data, net_message->maxsize)) <= 0){
+		fprint(2, "read: %r\n");
+		return qfalse;
+	}
+	if(n == net_message->maxsize){
+		Com_Printf("Oversize packet from %s\n", a->sys);
+		return qfalse;
+	}
+	net_message->cursize = n;
+	net_from = a;
 	return qtrue;
 }
 
-/*
-=============
-Sys_StringToAdr
-
-localhost
-idnewt
-idnewt:28000
-192.246.40.70
-192.246.40.70:28000
-=============
-*/
-qboolean	Sys_StringToAdr (const char *s, netadr_t *a)
+void
+Sys_SendPacket(int length, void *data, netadr_t *to)
 {
-	struct sockaddr_in sadr;
-	
-	if (!Sys_StringToSockaddr (s, (struct sockaddr *)&sadr))
-		return qfalse;
-	
-	SockadrToNetadr (&sadr, a);
+	netadr_t *a;
 
-	return qtrue;
-}
-
-
-//=============================================================================
-
-qboolean	Sys_GetPacket (netadr_t *net_from, msg_t *net_message)
-{
-	int 	ret;
-	struct sockaddr_in	from;
-	int		fromlen;
-	int		net_socket;
-	int		protocol;
-	int		err;
-
-	for (protocol = 0 ; protocol < 2 ; protocol++)
-	{
-		if (protocol == 0)
-			net_socket = ip_socket;
-		else
-			net_socket = ipx_socket;
-
-		if (!net_socket)
-			continue;
-
-		fromlen = sizeof(from);
-		ret = recvfrom (net_socket, net_message->data, net_message->maxsize
-			, 0, (struct sockaddr *)&from, &fromlen);
-
-		SockadrToNetadr (&from, net_from);
-		// bk000305: was missing
-		net_message->readcount = 0;
-
-		if (ret == -1)
-		{
-			err = errno;
-
-			if (err == EWOULDBLOCK || err == ECONNREFUSED)
-				continue;
-			Com_Printf ("NET_GetPacket: %s from %s\n", NET_ErrorString(),
-						NET_AdrToString(*net_from));
-			continue;
-		}
-
-		if (ret == net_message->maxsize)
-		{
-			Com_Printf ("Oversize packet from %s\n", NET_AdrToString (*net_from));
-			continue;
-		}
-
-		net_message->cursize = ret;
-		return qtrue;
-	}
-
-	return qfalse;
-}
-
-//=============================================================================
-
-void	Sys_SendPacket( int length, const void *data, netadr_t to )
-{
-	int		ret;
-	struct sockaddr_in	addr;
-	int		net_socket;
-
-	if (to.type == NA_BROADCAST)
-	{
-		net_socket = ip_socket;
-	}
-	else if (to.type == NA_IP)
-	{
-		net_socket = ip_socket;
-	}
-	else if (to.type == NA_IPX)
-	{
-		net_socket = ipx_socket;
-	}
-	else if (to.type == NA_BROADCAST_IPX)
-	{
-		net_socket = ipx_socket;
-	}
-	else {
-		Com_Error (ERR_FATAL, "NET_SendPacket: bad address type");
+	if(to->type != NA_IP && to->type != NA_BROADCAST){
+		Com_Error(ERR_FATAL, "NET_SendPacket: bad address type");
 		return;
 	}
-
-	if (!net_socket)
+	for(a=cons; a<cons+nelem(cons); a++)
+		if(strcmp(a->sys, to->sys) == 0 || a->fd < 0)
+			break;
+	if(a == cons + nelem(cons))
 		return;
-
-	NetadrToSockadr (&to, &addr);
-
-	ret = sendto (net_socket, data, length, 0, (struct sockaddr *)&addr, sizeof(addr) );
-	if (ret == -1)
-	{
-		Com_Printf ("NET_SendPacket ERROR: %s to %s\n", NET_ErrorString(),
-				NET_AdrToString (to));
-	}
-}
-
-
-//=============================================================================
-
-/*
-==================
-Sys_IsLANAddress
-
-LAN clients will have their rate var ignored
-==================
-*/
-qboolean	Sys_IsLANAddress (netadr_t adr) {
-	int		i;
-
-	if( adr.type == NA_LOOPBACK ) {
-		return qtrue;
-	}
-
-	if( adr.type == NA_IPX ) {
-		return qtrue;
-	}
-
-	if( adr.type != NA_IP ) {
-		return qfalse;
-	}
-
-	// choose which comparison to use based on the class of the address being tested
-	// any local adresses of a different class than the address being tested will fail based on the first byte
-
-	// Class A
-	if( (adr.ip[0] & 0x80) == 0x00 ) {
-		for ( i = 0 ; i < numIP ; i++ ) {
-			if( adr.ip[0] == localIP[i][0] ) {
-				return qtrue;
-			}
-		}
-		// the RFC1918 class a block will pass the above test
-		return qfalse;
-	}
-
-	// Class B
-	if( (adr.ip[0] & 0xc0) == 0x80 ) {
-		for ( i = 0 ; i < numIP ; i++ ) {
-			if( adr.ip[0] == localIP[i][0] && adr.ip[1] == localIP[i][1] ) {
-				return qtrue;
-			}
-			// also check against the RFC1918 class b blocks
-			if( adr.ip[0] == 172 && localIP[i][0] == 172 && (adr.ip[1] & 0xf0) == 16 && (localIP[i][1] & 0xf0) == 16 ) {
-				return qtrue;
-			}
-		}
-		return qfalse;
-	}
-
-	// Class C
-	for ( i = 0 ; i < numIP ; i++ ) {
-		if( adr.ip[0] == localIP[i][0] && adr.ip[1] == localIP[i][1] && adr.ip[2] == localIP[i][2] ) {
-			return qtrue;
-		}
-		// also check against the RFC1918 class c blocks
-		if( adr.ip[0] == 192 && localIP[i][0] == 192 && adr.ip[1] == 168 && localIP[i][1] == 168 ) {
-			return qtrue;
-		}
-	}
-	return qfalse;
-}
-
-/*
-==================
-Sys_ShowIP
-==================
-*/
-void Sys_ShowIP(void) {
-	int i;
-
-	for (i = 0; i < numIP; i++) {
-		Com_Printf( "IP: %i.%i.%i.%i\n", localIP[i][0], localIP[i][1], localIP[i][2], localIP[i][3] );
-	}
-}
-
-/*
-=====================
-NET_GetLocalAddress
-=====================
-*/
-void NET_GetLocalAddress( void ) {
-	char				hostname[256];
-	struct hostent		*hostInfo;
-	// int					error; // bk001204 - unused
-	char				*p;
-	int					ip;
-	int					n;
-
-	if ( gethostname( hostname, 256 ) == -1 ) {
-		return;
-	}
-
-	hostInfo = gethostbyname( hostname );
-	if ( !hostInfo ) {
-		return;
-	}
-
-	Com_Printf( "Hostname: %s\n", hostInfo->h_name );
-	n = 0;
-	while( ( p = hostInfo->h_aliases[n++] ) != NULL ) {
-		Com_Printf( "Alias: %s\n", p );
-	}
-
-	if ( hostInfo->h_addrtype != AF_INET ) {
-		return;
-	}
-
-	numIP = 0;
-	while( ( p = hostInfo->h_addr_list[numIP++] ) != NULL && numIP < MAX_IPS ) {
-		ip = ntohl( *(int *)p );
-		localIP[ numIP ][0] = p[0];
-		localIP[ numIP ][1] = p[1];
-		localIP[ numIP ][2] = p[2];
-		localIP[ numIP ][3] = p[3];
-		Com_Printf( "IP: %i.%i.%i.%i\n", ( ip >> 24 ) & 0xff, ( ip >> 16 ) & 0xff, ( ip >> 8 ) & 0xff, ip & 0xff );
-	}
-}
-
-/*
-====================
-NET_OpenIP
-====================
-*/
-// bk001204 - prototype needed
-int NET_IPSocket (char *net_interface, int port);
-void NET_OpenIP (void)
-{
-	cvar_t	*ip;
-	int		port;
-	int		i;
-
-	ip = Cvar_Get ("net_ip", "localhost", 0);
-
-	port = Cvar_Get("net_port", va("%i", PORT_SERVER), 0)->value;
-
-	for ( i = 0 ; i < 10 ; i++ ) {
-		ip_socket = NET_IPSocket (ip->string, port + i);
-		if ( ip_socket ) {
-			Cvar_SetValue( "net_port", port + i );
-			NET_GetLocalAddress();
+	else if(a->fd < 0){
+		memcpy(a, to, sizeof *a);
+		if((a->fd = dial(netmkaddr(a->addr, "udp", a->srv), nil, nil, nil)) < 0){
+			fprint(2, "dial: %r\n");
 			return;
 		}
 	}
-	Com_Error (ERR_FATAL, "Couldn't allocate IP port");
+	if(write(a->fd, data, length) != length){
+		fprint(2, "write: %r\n");
+		Com_Printf("NET_SendPacket %s: ERROR\n", to->sys);
+	}
 }
 
+qboolean
+Sys_IsLANAddress(netadr_t *a)
+{
+	if(a->type == NA_LOOPBACK)
+		return qtrue;
+	return qfalse;
+}
 
-/*
-====================
-NET_Init
-====================
-*/
+void
+Sys_ShowIP(void)
+{
+}
+
+void
+NET_Shutdown(void)
+{
+	netadr_t *a;
+
+	for(a=cons; a<cons+nelem(cons); a++)
+		if(a->fd >= 0){
+			close(a->fd);
+			a->fd = -1;
+		}
+	if(afd < 0)
+		return;
+	close(afd);
+	threadkill(lpid);
+	afd = -1;
+}
+
+static void
+lproc(void *)
+{
+	int fd, lfd;
+	char adir[40], ldir[40], data[100];
+	cvar_t *port;
+
+	port = Cvar_Get("net_port", "27960", 0);
+	snprint(data, sizeof data, "%s/udp!*!%d", netmtpt, (int)port->value);
+	if((afd = announce(data, adir)) < 0)
+		sysfatal("announce: %r");
+	for(;;){
+		if((lfd = listen(adir, ldir)) < 0
+		|| (fd = accept(lfd, ldir)) < 0)
+			break;
+		close(lfd);
+		send(echan, nil);
+		send(lchan, &fd);
+	}
+}
+
 void NET_Init (void)
 {
-	noudp = Cvar_Get ("net_noudp", "0", 0);
-	// open sockets
-	if (! noudp->value) {
-		NET_OpenIP ();
+	netadr_t *a;
+
+	/* FIXME: configure netmtpt */
+
+	if(svonly && afd < 0){
+		if((lchan = chancreate(sizeof(int), 0)) == nil)
+			sysfatal("chancreate: %r");
+		if((lpid = proccreate(lproc, nil, 8192)) < 0)
+			sysfatal("proccreate lproc: %r");
 	}
+	for(a=cons; a<cons+nelem(cons); a++)
+		a->fd = -1;
 }
-
-
-/*
-====================
-NET_IPSocket
-====================
-*/
-int NET_IPSocket (char *net_interface, int port)
-{
-	int newsocket;
-	struct sockaddr_in address;
-	qboolean _qtrue = qtrue;
-	int	i = 1;
-
-	if ( net_interface ) {
-		Com_Printf("Opening IP socket: %s:%i\n", net_interface, port );
-	} else {
-		Com_Printf("Opening IP socket: localhost:%i\n", port );
-	}
-
-	if ((newsocket = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-	{
-		Com_Printf ("ERROR: UDP_OpenSocket: socket: %s", NET_ErrorString());
-		return 0;
-	}
-
-	// make it non-blocking
-	if (ioctl (newsocket, FIONBIO, &_qtrue) == -1)
-	{
-		Com_Printf ("ERROR: UDP_OpenSocket: ioctl FIONBIO:%s\n", NET_ErrorString());
-		return 0;
-	}
-
-	// make it broadcast capable
-	if (setsockopt(newsocket, SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i)) == -1)
-	{
-		Com_Printf ("ERROR: UDP_OpenSocket: setsockopt SO_BROADCAST:%s\n", NET_ErrorString());
-		return 0;
-	}
-
-	if (!net_interface || !net_interface[0] || !Q_stricmp(net_interface, "localhost"))
-		address.sin_addr.s_addr = INADDR_ANY;
-	else
-		Sys_StringToSockaddr (net_interface, (struct sockaddr *)&address);
-
-	if (port == PORT_ANY)
-		address.sin_port = 0;
-	else
-		address.sin_port = htons((short)port);
-
-	address.sin_family = AF_INET;
-
-	if( bind (newsocket, (void *)&address, sizeof(address)) == -1)
-	{
-		Com_Printf ("ERROR: UDP_OpenSocket: bind: %s\n", NET_ErrorString());
-		close (newsocket);
-		return 0;
-	}
-
-	return newsocket;
-}
-
-/*
-====================
-NET_Shutdown
-====================
-*/
-void	NET_Shutdown (void)
-{
-	if (ip_socket) {
-		close(ip_socket);
-		ip_socket = 0;
-	}
-}
-
-
-/*
-====================
-NET_ErrorString
-====================
-*/
-char *NET_ErrorString (void)
-{
-	int		code;
-
-	code = errno;
-	return strerror (code);
-}
-
-// sleeps msec or until net socket is ready
-void NET_Sleep(int msec)
-{
-    struct timeval timeout;
-	fd_set	fdset;
-	extern qboolean stdin_active;
-
-	if (!ip_socket || !com_dedicated->integer)
-		return; // we're not a server, just run full speed
-
-	FD_ZERO(&fdset);
-	if (stdin_active)
-		FD_SET(0, &fdset); // stdin is processed too
-	FD_SET(ip_socket, &fdset); // network socket
-	timeout.tv_sec = msec/1000;
-	timeout.tv_usec = (msec%1000)*1000;
-	select(ip_socket+1, &fdset, NULL, NULL, &timeout);
-}
-

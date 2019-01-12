@@ -141,27 +141,29 @@ typedef enum {
 
 typedef struct {
 	netadrtype_t	type;
-
-	byte	ip[4];
-	byte	ipx[10];
-
-	unsigned short	port;
+	int fd;
+	char sys[72];
+	char addr[64];
+	char srv[8];
 } netadr_t;
+
+extern netadr_t *net_from, cons[2*MAX_CLIENTS];
+extern int svonly;
 
 void		NET_Init( void );
 void		NET_Shutdown( void );
 void		NET_Restart( void );
 void		NET_Config( qboolean enableNetworking );
 
-void		NET_SendPacket (netsrc_t sock, int length, const void *data, netadr_t to);
-void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, netadr_t adr, const char *format, ...);
-void		QDECL NET_OutOfBandData( netsrc_t sock, netadr_t adr, byte *format, int len );
+void		NET_SendPacket (netsrc_t sock, int length, const void *data, netadr_t *to);
+void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, netadr_t *adr, const char *format, ...);
+void		QDECL NET_OutOfBandData( netsrc_t sock, netadr_t *adr, byte *format, int len );
 
-qboolean	NET_CompareAdr (netadr_t a, netadr_t b);
-qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b);
-qboolean	NET_IsLocalAddress (netadr_t adr);
-const char	*NET_AdrToString (netadr_t a);
-qboolean	NET_StringToAdr ( const char *s, netadr_t *a);
+qboolean	NET_CompareAdr(netadr_t*, netadr_t*);
+qboolean	NET_CompareBaseAdr(netadr_t*, netadr_t*);
+qboolean	NET_IsLocalAddress(netadr_t*);
+char*	NET_AdrToString(netadr_t*);
+qboolean	NET_StringToAdr(char*, netadr_t*);
 qboolean	NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, msg_t *net_message);
 void		NET_Sleep(int msec);
 
@@ -982,17 +984,17 @@ void	Sys_StreamSeek( fileHandle_t f, int offset, int origin );
 void	Sys_ShowConsole( int level, qboolean quitOnClose );
 void	Sys_SetErrorText( const char *text );
 
-void	Sys_SendPacket( int length, const void *data, netadr_t to );
+void	Sys_SendPacket( int length, const void *data, netadr_t *to );
 
 qboolean	Sys_StringToAdr( const char *s, netadr_t *a );
 //Does NOT parse port numbers, only base addresses.
 
-qboolean	Sys_IsLANAddress (netadr_t adr);
+qboolean	Sys_IsLANAddress (netadr_t *adr);
 void		Sys_ShowIP(void);
 
 qboolean	Sys_CheckCD( void );
 
-void	Sys_Mkdir( const char *path );
+int	Sys_Mkdir( const char *path );
 char	*Sys_Cwd( void );
 void	Sys_SetDefaultCDPath(const char *path);
 char	*Sys_DefaultCDPath(void);
@@ -1011,6 +1013,9 @@ qboolean Sys_LowPhysicalMemory();
 unsigned int Sys_ProcessorCount();
 
 int Sys_MonkeyShouldBeSpanked( void );
+
+void*	emalloc(ulong);
+vlong	flen(int);
 
 /* This is based on the Adaptive Huffman algorithm described in Sayood's Data
  * Compression book.  The ranks are not actually stored, but implicitly defined
