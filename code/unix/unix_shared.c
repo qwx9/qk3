@@ -223,7 +223,7 @@ char *Sys_DefaultHomePath(void)
 	if ((p = getenv("home")) != NULL) {
 		Q_strncpyz(homePath, p, sizeof(homePath));
 		free(p);
-		Q_strcat(homePath, sizeof(homePath), "/.q3a");
+		Q_strcat(homePath, sizeof(homePath), "/lib/quake3");
 		if(Sys_Mkdir(homePath) < 0)
 			Sys_Error("Unable to create directory \"%s\"\n", homePath);
 		return homePath;
