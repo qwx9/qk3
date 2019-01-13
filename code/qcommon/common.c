@@ -1841,7 +1841,7 @@ void Hunk_Trash( void ) {
 
 	if (length > 0x7FFFF) {
 		//randomly trash data within buf
-		rnd = random() * (length - 0x7FFFF);
+		rnd = qrandom() * (length - 0x7FFFF);
 		value = 31;
 		for (i = 0; i < 0x7FFFF; i++) {
 			value *= 109;

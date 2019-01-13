@@ -32,14 +32,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //debugging on
 #define AAS_DEBUG
 
-#define MAX_CLIENTS			64
-#define	MAX_MODELS			256		// these are sent over the net as 8 bits
-#define	MAX_SOUNDS			256		// so they cannot be blindly increased
-#define	MAX_CONFIGSTRINGS	1024
-
+#ifndef CS_MODELS
 #define	CS_SCORES			32
 #define	CS_MODELS			(CS_SCORES+MAX_CLIENTS)
 #define	CS_SOUNDS			(CS_MODELS+MAX_MODELS)
+#endif
 
 #define DF_AASENTNUMBER(x)		(x - aasworld.entities)
 #define DF_NUMBERAASENT(x)		(&aasworld.entities[x])
@@ -290,17 +287,17 @@ typedef struct aas_s
 
 #ifndef BSPCINCLUDE
 
-#include "be_aas_main.h"
-#include "be_aas_entity.h"
-#include "be_aas_sample.h"
-#include "be_aas_cluster.h"
-#include "be_aas_reach.h"
-#include "be_aas_route.h"
-#include "be_aas_routealt.h"
-#include "be_aas_debug.h"
-#include "be_aas_file.h"
-#include "be_aas_optimize.h"
-#include "be_aas_bsp.h"
-#include "be_aas_move.h"
+#include "../botlib/be_aas_main.h"
+#include "../botlib/be_aas_entity.h"
+#include "../botlib/be_aas_sample.h"
+#include "../botlib/be_aas_cluster.h"
+#include "../botlib/be_aas_reach.h"
+#include "../botlib/be_aas_route.h"
+#include "../botlib/be_aas_routealt.h"
+#include "../botlib/be_aas_debug.h"
+#include "../botlib/be_aas_file.h"
+#include "../botlib/be_aas_optimize.h"
+#include "../botlib/be_aas_bsp.h"
+#include "../botlib/be_aas_move.h"
 
 #endif //BSPCINCLUDE

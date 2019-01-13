@@ -415,14 +415,6 @@ int AAS_BestReachableArea(vec3_t origin, vec3_t mins, vec3_t maxs, vec3_t goalor
 			//it can very well happen that the AAS_PointAreaNum function tells that
 			//a point is in an area and that starting a AAS_TraceClientBBox from that
 			//point will return trace.startsolid qtrue
-#if 0
-			if (AAS_PointAreaNum(start))
-			{
-				Log_Write("point %f %f %f in area %d but trace startsolid", start[0], start[1], start[2], areanum);
-				AAS_DrawPermanentCross(start, 4, LINECOLOR_RED);
-			} //end if
-			botimport.Print(PRT_MESSAGE, "AAS_BestReachableArea: start solid\n");
-#endif
 			VectorCopy(start, goalorigin);
 			return areanum;
 		} //end else
@@ -3386,15 +3378,6 @@ void AAS_Reachability_FuncBobbing(void)
 		end_plane.dist = end_edgeverts[0][2];
 		VectorSet(end_plane.normal, 0, 0, 1);
 		//
-#ifndef BSPC
-#if 0
-		for (i = 0; i < 4; i++)
-		{
-			AAS_PermanentLine(start_edgeverts[i], start_edgeverts[(i+1)%4], 1);
-			AAS_PermanentLine(end_edgeverts[i], end_edgeverts[(i+1)%4], 1);
-		} //end for
-#endif
-#endif
 		VectorCopy(move_start, move_start_top);
 		move_start_top[2] += maxs[2] - mid[2] + 24; //+ bbox maxs z
 		VectorCopy(move_end, move_end_top);

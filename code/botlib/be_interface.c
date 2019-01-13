@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *****************************************************************************/
 
 #include "../game/q_shared.h"
+#include "../qcommon/qcommon.h"
 #include "l_memory.h"
 #include "l_log.h"
 #include "l_libvar.h"
@@ -76,7 +77,7 @@ int botlibsetup = qfalse;
 //===========================================================================
 int Sys_MilliSeconds(void)
 {
-	return clock() * 1000 / CLOCKS_PER_SEC;
+	return Sys_Milliseconds();
 } //end of the function Sys_MilliSeconds
 //===========================================================================
 //

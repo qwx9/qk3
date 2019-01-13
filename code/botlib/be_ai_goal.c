@@ -45,6 +45,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "be_ai_weight.h"
 #include "../game/be_ai_goal.h"
 #include "../game/be_ai_move.h"
+#include "be_aas_bsp.h"
 
 //#define DEBUG_AI_GOAL
 #ifdef RANDOMIZE

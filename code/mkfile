@@ -3,6 +3,34 @@ BIN=$home/bin/$objtype
 TARG=q3ded
 
 OFILES=\
+	botlib/be_aas_bspq3.$O\
+	botlib/be_aas_cluster.$O\
+	botlib/be_aas_debug.$O\
+	botlib/be_aas_entity.$O\
+	botlib/be_aas_file.$O\
+	botlib/be_aas_main.$O\
+	botlib/be_aas_move.$O\
+	botlib/be_aas_optimize.$O\
+	botlib/be_aas_reach.$O\
+	botlib/be_aas_route.$O\
+	botlib/be_aas_routealt.$O\
+	botlib/be_aas_sample.$O\
+	botlib/be_ai_char.$O\
+	botlib/be_ai_chat.$O\
+	botlib/be_ai_gen.$O\
+	botlib/be_ai_goal.$O\
+	botlib/be_ai_move.$O\
+	botlib/be_ai_weap.$O\
+	botlib/be_ai_weight.$O\
+	botlib/be_ea.$O\
+	botlib/be_interface.$O\
+	botlib/l_crc.$O\
+	botlib/l_libvar.$O\
+	botlib/l_log.$O\
+	botlib/l_memory.$O\
+	botlib/l_precomp.$O\
+	botlib/l_script.$O\
+	botlib/l_struct.$O\
 	null/null_client.$O\
 	null/null_input.$O\
 	null/null_snddma.$O\
@@ -31,6 +59,7 @@ OFILES=\
 	qcommon/unzip.$O\
 	qcommon/vm.$O\
 	qcommon/vm_interpreted.$O\
+	null/null_vm.$O\
 	game/q_math.$O\
 	game/q_shared.$O\
 	unix/qk3ded.$O\
@@ -39,6 +68,31 @@ OFILES=\
 	unix/unix_shared.$O\
 
 HFILES=\
+	botlib/aasfile.h\
+	botlib/be_aas_bsp.h\
+	botlib/be_aas_cluster.h\
+	botlib/be_aas_debug.h\
+	botlib/be_aas_def.h\
+	botlib/be_aas_entity.h\
+	botlib/be_aas_file.h\
+	botlib/be_aas_funcs.h\
+	botlib/be_aas_main.h\
+	botlib/be_aas_move.h\
+	botlib/be_aas_optimize.h\
+	botlib/be_aas_reach.h\
+	botlib/be_aas_route.h\
+	botlib/be_aas_routealt.h\
+	botlib/be_aas_sample.h\
+	botlib/be_ai_weight.h\
+	botlib/be_interface.h\
+	botlib/l_crc.h\
+	botlib/l_libvar.h\
+	botlib/l_log.h\
+	botlib/l_memory.h\
+	botlib/l_precomp.h\
+	botlib/l_script.h\
+	botlib/l_struct.h\
+	botlib/l_utils.h\
 	game/ai_chat.h\
 	game/ai_cmd.h\
 	game/ai_dmnet.h\
@@ -82,7 +136,7 @@ HFILES=\
 	unix/unix_glw.h\
 
 </sys/src/cmd/mkone
-CFLAGS=$CFLAGS -DDEDICATED -DC_ONLY
+CFLAGS=$CFLAGS -DDEDICATED -DC_ONLY -DBOTLIB
 
 %.$O:	%.c
 	$CC $CFLAGS -o $stem.$O $stem.c

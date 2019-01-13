@@ -435,119 +435,6 @@ weightconfig_t *ReadWeightConfig(char *filename)
 	//
 	return config;
 } //end of the function ReadWeightConfig
-#if 0
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-qboolean WriteFuzzyWeight(FILE *fp, fuzzyseperator_t *fs)
-{
-	if (fs->type == WT_BALANCE)
-	{
-		if (fprintf(fp, " return balance(") < 0) return qfalse;
-		if (!WriteFloat(fp, fs->weight)) return qfalse;
-		if (fprintf(fp, ",") < 0) return qfalse;
-		if (!WriteFloat(fp, fs->minweight)) return qfalse;
-		if (fprintf(fp, ",") < 0) return qfalse;
-		if (!WriteFloat(fp, fs->maxweight)) return qfalse;
-		if (fprintf(fp, ");\n") < 0) return qfalse;
-	} //end if
-	else
-	{
-		if (fprintf(fp, " return ") < 0) return qfalse;
-		if (!WriteFloat(fp, fs->weight)) return qfalse;
-		if (fprintf(fp, ";\n") < 0) return qfalse;
-	} //end else
-	return qtrue;
-} //end of the function WriteFuzzyWeight
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-qboolean WriteFuzzySeperators_r(FILE *fp, fuzzyseperator_t *fs, int indent)
-{
-	if (!WriteIndent(fp, indent)) return qfalse;
-	if (fprintf(fp, "switch(%d)\n", fs->index) < 0) return qfalse;
-	if (!WriteIndent(fp, indent)) return qfalse;
-	if (fprintf(fp, "{\n") < 0) return qfalse;
-	indent++;
-	do
-	{
-		if (!WriteIndent(fp, indent)) return qfalse;
-		if (fs->next)
-		{
-			if (fprintf(fp, "case %d:", fs->value) < 0) return qfalse;
-		} //end if
-		else
-		{
-			if (fprintf(fp, "default:") < 0) return qfalse;
-		} //end else
-		if (fs->child)
-		{
-			if (fprintf(fp, "\n") < 0) return qfalse;
-			if (!WriteIndent(fp, indent)) return qfalse;
-			if (fprintf(fp, "{\n") < 0) return qfalse;
-			if (!WriteFuzzySeperators_r(fp, fs->child, indent + 1)) return qfalse;
-			if (!WriteIndent(fp, indent)) return qfalse;
-			if (fs->next)
-			{
-				if (fprintf(fp, "} //end case\n") < 0) return qfalse;
-			} //end if
-			else
-			{
-				if (fprintf(fp, "} //end default\n") < 0) return qfalse;
-			} //end else
-		} //end if
-		else
-		{
-			if (!WriteFuzzyWeight(fp, fs)) return qfalse;
-		} //end else
-		fs = fs->next;
-	} while(fs);
-	indent--;
-	if (!WriteIndent(fp, indent)) return qfalse;
-	if (fprintf(fp, "} //end switch\n") < 0) return qfalse;
-	return qtrue;
-} //end of the function WriteItemFuzzyWeights_r
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-qboolean WriteWeightConfig(char *filename, weightconfig_t *config)
-{
-	int i;
-	FILE *fp;
-	weight_t *ifw;
-
-	fp = fopen(filename, "wb");
-	if (!fp) return qfalse;
-
-	for (i = 0; i < config->numweights; i++)
-	{
-		ifw = &config->weights[i];
-		if (fprintf(fp, "\nweight \"%s\"\n", ifw->name) < 0) return qfalse;
-		if (fprintf(fp, "{\n") < 0) return qfalse;
-		if (ifw->firstseperator->index > 0)
-		{
-			if (!WriteFuzzySeperators_r(fp, ifw->firstseperator, 1)) return qfalse;
-		} //end if
-		else
-		{
-			if (!WriteIndent(fp, 1)) return qfalse;
-			if (!WriteFuzzyWeight(fp, ifw->firstseperator)) return qfalse;
-		} //end else
-		if (fprintf(fp, "} //end weight\n") < 0) return qfalse;
-	} //end for
-	fclose(fp);
-	return qtrue;
-} //end of the function WriteWeightConfig
-#endif
 //===========================================================================
 //
 // Parameter:				-
@@ -614,7 +501,7 @@ float FuzzyWeightUndecided_r(int *inventory, fuzzyseperator_t *fs)
 	if (inventory[fs->index] < fs->value)
 	{
 		if (fs->child) return FuzzyWeightUndecided_r(inventory, fs->child);
-		else return fs->minweight + random() * (fs->maxweight - fs->minweight);
+		else return fs->minweight + qrandom() * (fs->maxweight - fs->minweight);
 	} //end if
 	else if (fs->next)
 	{
@@ -622,10 +509,10 @@ float FuzzyWeightUndecided_r(int *inventory, fuzzyseperator_t *fs)
 		{
 			//first weight
 			if (fs->child) w1 = FuzzyWeightUndecided_r(inventory, fs->child);
-			else w1 = fs->minweight + random() * (fs->maxweight - fs->minweight);
+			else w1 = fs->minweight + qrandom() * (fs->maxweight - fs->minweight);
 			//second weight
 			if (fs->next->child) w2 = FuzzyWeight_r(inventory, fs->next->child);
-			else w2 = fs->next->minweight + random() * (fs->next->maxweight - fs->next->minweight);
+			else w2 = fs->next->minweight + qrandom() * (fs->next->maxweight - fs->next->minweight);
 			//the scale factor
 			scale = (inventory[fs->index] - fs->value) / (fs->next->value - fs->value);
 			//scale between the two weights
@@ -686,12 +573,12 @@ float FuzzyWeightUndecided(int *inventory, weightconfig_t *wc, int weightnum)
 		if (inventory[s->index] < s->value)
 		{
 			if (s->child) s = s->child;
-			else return s->minweight + random() * (s->maxweight - s->minweight);
+			else return s->minweight + qrandom() * (s->maxweight - s->minweight);
 		} //end if
 		else
 		{
 			if (s->next) s = s->next;
-			else return s->minweight + random() * (s->maxweight - s->minweight);
+			else return s->minweight + qrandom() * (s->maxweight - s->minweight);
 		} //end else
 	} //end if
 	return 0;
@@ -712,7 +599,7 @@ void EvolveFuzzySeperator_r(fuzzyseperator_t *fs)
 	else if (fs->type == WT_BALANCE)
 	{
 		//every once in a while an evolution leap occurs, mutation
-		if (random() < 0.01) fs->weight += crandom() * (fs->maxweight - fs->minweight);
+		if (qrandom() < 0.01) fs->weight += crandom() * (fs->maxweight - fs->minweight);
 		else fs->weight += crandom() * (fs->maxweight - fs->minweight) * 0.5;
 		//modify bounds if necesary because of mutation
 		if (fs->weight < fs->minweight) fs->minweight = fs->weight;

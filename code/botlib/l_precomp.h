@@ -34,22 +34,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 #ifndef PATH_SEPERATORSTR
-	#if defined(WIN32)|defined(_WIN32)|defined(__NT__)|defined(__WINDOWS__)|defined(__WINDOWS_386__)
-		#define PATHSEPERATOR_STR		"\\"
-	#else
-		#define PATHSEPERATOR_STR		"/"
-	#endif
+	#define PATHSEPERATOR_STR		"/"
 #endif
 #ifndef PATH_SEPERATORCHAR
-	#if defined(WIN32)|defined(_WIN32)|defined(__NT__)|defined(__WINDOWS__)|defined(__WINDOWS_386__)
-		#define PATHSEPERATOR_CHAR		'\\'
-	#else
-		#define PATHSEPERATOR_CHAR		'/'
-	#endif
+	#define PATHSEPERATOR_CHAR		'/'
 #endif
 
-#if defined(BSPC) && !defined(QDECL)
+#ifdef BSPC
+#ifndef QDECL
 #define QDECL
+#endif
 #endif
 
 

@@ -22,7 +22,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // sv_bot.c
 
 #include "server.h"
+#include "../botlib/l_memory.h"
+#include "../botlib/l_log.h"
+#include "../botlib/l_libvar.h"
+#include "../botlib/l_script.h"
+#include "../botlib/l_precomp.h"
+#include "../botlib/l_struct.h"
+#include "../botlib/aasfile.h"
 #include "../game/botlib.h"
+#include "../game/be_aas.h"
+#include "../botlib/be_aas_funcs.h"
+#include "../botlib/be_aas_def.h"
+#include "../botlib/be_interface.h"
+#include "../game/be_ea.h"
+#include "../botlib/be_ai_weight.h"
+#include "../game/be_ai_goal.h"
+#include "../game/be_ai_move.h"
+#include "../game/be_ai_weap.h"
+#include "../game/be_ai_chat.h"
+#include "../game/be_ai_char.h"
+#include "../game/be_ai_gen.h"
 
 typedef struct bot_debugpoly_s
 {
