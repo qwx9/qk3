@@ -441,6 +441,8 @@ vm_t *VM_Create( const char *module, intptr (*systemCalls)(int *),
 	int			i, remaining;
 	char		filename[MAX_QPATH];
 
+	interpret = VMI_BYTECODE;
+
 	if ( !module || !module[0] || !systemCalls ) {
 		Com_Error( ERR_FATAL, "VM_Create: bad parms" );
 	}
