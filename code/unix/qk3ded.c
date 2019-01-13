@@ -114,6 +114,8 @@ ret:
 		return eventQue[ ( eventTail - 1 ) & MASK_QUED_EVENTS ];
 	}
 
+	sleep(1);
+
 	// create an empty event to return
 
 	memset( &ev, 0, sizeof( ev ) );
@@ -149,6 +151,9 @@ threadmain(int argc, char **argv)
 	int i, len;
 	char *args;
 
+	if((echan = chancreate(sizeof(int), 1)) == nil
+	|| (inchan = chancreate(sizeof(void *), 2)) == nil)
+		sysfatal("chancreate: %r");
 	Sys_SetDefaultCDPath(argv[0]);
 	/* FIXME: no. */
 	for(len=1, i=1; i<argc; i++)
@@ -161,9 +166,6 @@ threadmain(int argc, char **argv)
 	}
 	Com_Init(args);
 	NET_Init();
-	if((echan = chancreate(sizeof(int), 1)) == nil
-	|| (inchan = chancreate(sizeof(void *), 2)) == nil)
-		sysfatal("chancreate: %r");
 	if(proccreate(cproc, nil, 8192) < 0)
 		sysfatal("proccreate iproc: %r");
 	setfcr(getfcr() & ~(FPINVAL|FPZDIV));
