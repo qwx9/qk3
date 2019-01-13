@@ -84,9 +84,10 @@ getinfo(netadr_t *a)
 		fprint(2, "getnetconninfo: %r\n");
 		return;
 	}
-	strncpy(a->addr, nc->raddr, sizeof(a->addr)-1);
+	strncpy(a->addr, nc->rsys, sizeof(a->addr)-1);
 	strncpy(a->srv, nc->rserv, sizeof(a->srv)-1);
 	snprint(a->sys, sizeof a->sys, "%s!%s", a->addr, a->srv);
+	a->type = NA_IP;
 	free(nc);
 }
 
