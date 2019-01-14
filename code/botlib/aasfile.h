@@ -112,6 +112,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define AASLUMP_PORTALINDEX			12
 #define AASLUMP_CLUSTERS			13
 
+#pragma pack on
+
 //========== bounding box =========
 
 //bounding box
@@ -244,6 +246,7 @@ typedef struct aas_header_s
 	aas_lump_t lumps[AAS_LUMPS];
 } aas_header_t;
 
+#pragma pack off
 
 //====== additional information ======
 /*
